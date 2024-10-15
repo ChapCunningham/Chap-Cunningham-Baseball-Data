@@ -1,22 +1,19 @@
 import streamlit as st
 import pandas as pd
 import gdown
+import plotly.express as px
 
-# Step 1: Define the Google Drive file ID
+# Step 1: Download the CSV file from Google Drive
 file_id = '1iZ5nZ-Vy6uDW8P2xf-bNe-MPoLmL9c-w'  # Replace with your actual file ID
-
-# Step 2: Build the download URL and define the output file name
 url = f'https://drive.google.com/uc?id={file_id}'
 output = 'pitcherapp_statcast_2024.csv'
-
-# Step 3: Download the CSV file from Google Drive
 gdown.download(url, output, quiet=False)
 
-# Step 4: Load the CSV into a DataFrame
+# Step 2: Load the CSV into a DataFrame
 df2024 = pd.read_csv(output)
 
-# Step 5: Streamlit App Layout
-st.title("Pitch Movement Visualization")
+# Step 3: Streamlit App Layout
+st.title("Pitch Movement Visualization and Stats Table")
 
 # Player dropdown for selecting
 players = df2024['player_name'].unique()
@@ -25,8 +22,7 @@ selected_player = st.selectbox('Select a player:', players)
 # Filter data for the selected player
 player_data = df2024[df2024['player_name'] == selected_player]
 
-# Create the scatter plot using Plotly Express
-import plotly.express as px
+# Step 4: Create the scatter plot using Plotly Express
 fig = px.scatter(
     player_data,
     x='pfx_x',
@@ -38,3 +34,18 @@ fig = px.scatter(
 
 # Display the plot
 st.plotly_chart(fig)
+
+# Step 5: Create the stats table for each pitch type
+pitch_stats = player_data.groupby('pitch_type').agg(
+    count=('pitch_type', 'size'),
+    avg_release_speed=('release_speed', 'mean'),
+    avg_release_pos_x=('release_pos_x', 'mean'),
+    avg_release_pos_z=('release_pos_z', 'mean'),
+    avg_pfx_x=('pfx_x', 'mean'),
+    avg_pfx_z=('pfx_z', 'mean'),
+    avg_delta_run_exp=('delta_run_exp', 'mean')
+).reset_index()
+
+# Step 6: Display the stats table in Streamlit
+st.subheader(f"{selected_player}'s Pitch Statistics")
+st.write(pitch_stats)
